@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
-// Define interfaces for OrderItem and OrderData
 interface OrderItem {
   _id: string;
   title: string;
-  price: number;
+  price: number | string;
   imageUrl: string;
+  quantity?: number;
 }
 
 interface OrderData {
@@ -17,7 +17,6 @@ interface OrderData {
   country: string;
   orderItems: OrderItem[];
   totalPrice: number;
-  status: string;
 }
 
 interface CheckoutFormProps {
@@ -25,11 +24,10 @@ interface CheckoutFormProps {
   onCancel: () => void;
   details?: { name: string; email: string; address: string; phone: string; zipCode: string; country: string };
   cart: Array<OrderItem>;
-  totalPrice: string | number;
+  totalPrice: number;
 }
 
 const CheckoutForm: React.FC<CheckoutFormProps> = ({ onSubmit, onCancel, details, cart, totalPrice }) => {
-  // Use Record<string, string> for formData state
   const [formData, setFormData] = useState<Record<string, string>>({
     name: details?.name || '',
     email: details?.email || '',
@@ -39,7 +37,6 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ onSubmit, onCancel, details
     country: details?.country || ''
   });
 
-  // Define the order data using OrderData interface
   const orderData: OrderData = {
     name: formData.name,
     email: formData.email,
@@ -47,18 +44,21 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ onSubmit, onCancel, details
     phone: formData.phone,
     zipCode: formData.zipCode,
     country: formData.country,
-    orderItems: cart,
-    totalPrice: parseFloat(totalPrice as string),
-    status: "pending"
+    orderItems: cart.map(item => ({
+      _id: item._id,
+      title: item.title,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      quantity: item.quantity || 1,
+    })),
+    totalPrice: typeof totalPrice === 'number' ? totalPrice : parseFloat(totalPrice),
   };
 
-  // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [id]: value }));
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(orderData);

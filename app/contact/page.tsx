@@ -1,14 +1,59 @@
 
-import { FaMapMarkerAlt, FaPhoneAlt, FaClock } from "react-icons/fa"; // Font Awesome icons
+"use client";
+
+import { useState } from "react";
+import { FaMapMarkerAlt, FaPhoneAlt, FaClock } from "react-icons/fa";
 import { GrTrophy } from "react-icons/gr";
 import { BsPatchCheck } from "react-icons/bs";
 import { FaFaceGrinBeam } from "react-icons/fa6";
-import Link from "next/link";
+
+interface FormData {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
 
 const ContactSection = () => {
+  const [formData, setFormData] = useState<FormData>({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess(false);
+
+    try {
+      // Here you can send to your API or email service
+      console.log("Contact form submitted:", formData);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSuccess(true);
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch {
+      setError("Failed to send message. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="overflow-x-hidden">
-      <div className="flex justify-center items-center py-16 px-4 w-full ">
+      <div className="flex justify-center items-center py-16 px-4 w-full">
         <div className="max-w-full w-auto">
           {/* Header */}
           <div className="text-center mb-12">
@@ -57,27 +102,48 @@ const ContactSection = () => {
 
             {/* Form */}
             <div className="p-6">
-              <form>
+              {success && (
+                <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+                  ✓ Message sent successfully! We&apos;ll get back to you soon.
+                </div>
+              )}
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+                  ✗ {error}
+                </div>
+              )}
+              <form onSubmit={handleSubmit}>
                 <div className="mb-6">
                   <label className="block text-gray-700 font-medium mb-2">Your Name</label>
                   <input
                     type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
                     placeholder="Your Name"
                     className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
                   />
                 </div>
                 <div className="mb-6">
                   <label className="block text-gray-700 font-medium mb-2">Email Address</label>
                   <input
                     type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
                     placeholder="Email Address"
                     className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
                   />
                 </div>
                 <div className="mb-6">
                   <label className="block text-gray-700 font-medium mb-2">Subject</label>
                   <input
                     type="text"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
                     placeholder="This is optional"
                     className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
@@ -85,15 +151,20 @@ const ContactSection = () => {
                 <div className="mb-6">
                   <label className="block text-gray-700 font-medium mb-2">Message</label>
                   <textarea
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
                     placeholder="Hi! I'd like to ask about"
                     className="w-full border border-gray-300 rounded-lg p-3 h-32 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
                   ></textarea>
                 </div>
                 <button
                   type="submit"
-                  className="w-[237px] bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600"
+                  disabled={loading}
+                  className="w-[237px] bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  <Link href="/" className="mr-5 hover:text-gray-900">Submit</Link>
+                  {loading ? "Sending..." : "Submit"}
                 </button>
               </form>
             </div>

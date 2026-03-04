@@ -5,6 +5,8 @@ import Image from "next/image";
 import { GrCart } from "react-icons/gr";
 import { client } from "@/sanity/lib/client";
 import Link from "next/link";
+import { useCart } from "@/context/CartContext";
+import Toast from "@/components/Toast";
 
 // Product type
 type Product = {
@@ -21,10 +23,11 @@ type Product = {
 };
 
 const ProductPage = () => {
+  const { addToCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCart] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState({ show: false, message: "" });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,7 +47,6 @@ const ProductPage = () => {
         }`;
         const result = await client.fetch(query);
         setProducts(result);
-        setCart(JSON.parse(localStorage.getItem("cart") || "[]"));
       } catch (error) {
         setError("Error fetching products");
         console.error("Error fetching products:", error);
@@ -56,13 +58,15 @@ const ProductPage = () => {
     fetchData();
   }, []);
 
-  const addToCart = (product: Product) => {
-    setCart((prevCart) => {
-      const updatedCart = [...prevCart, product];
-      localStorage.setItem("cart", JSON.stringify(updatedCart));
-      return updatedCart;
+  const handleAddToCart = (product: Product) => {
+    addToCart({
+      _id: product._id,
+      title: product.title,
+      price: product.price,
+      imageUrl: product.imageUrl,
+      description: product.description,
     });
-    alert(`${product.title} added to cart!`);
+    setToast({ show: true, message: `${product.title} added to cart!` });
   };
 
   return (
@@ -113,7 +117,7 @@ const ProductPage = () => {
                     </div>
                     <button
                       className="p-2 rounded-md shadow-md cursor-pointer bg-blue-500 text-white hover:bg-blue-600"
-                      onClick={() => addToCart(product)}
+                      onClick={() => handleAddToCart(product)}
                       aria-label={`Add ${product.title} to cart`}
                     >
                       <GrCart className="text-2xl" />
@@ -126,22 +130,13 @@ const ProductPage = () => {
         </div>
       </section>
 
-      {/* Shopping Cart */}
-      <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg p-4">
-        <h3 className="text-lg font-semibold">Shopping Cart</h3>
-        <ul>
-          {cart.length > 0 ? (
-            cart.map((item, index) => (
-              <li key={`${item._id}-${index}`} className="flex justify-between py-2">
-                <span>{item.title}</span>
-                <span>${Number(item.price).toFixed(2)}</span>
-              </li>
-            ))
-          ) : (
-            <p>No items in the cart</p>
-          )}
-        </ul>
-      </div>
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        isVisible={toast.show}
+        onClose={() => setToast({ ...toast, show: false })}
+        type="success"
+      />
     </div>
   );
 };

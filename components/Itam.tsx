@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { GrCart } from "react-icons/gr";
 import { client } from "@/sanity/lib/client";
+import { useCart } from "@/context/CartContext";
+import Toast from "@/components/Toast";
 
 type Product = {
   _id: string;
@@ -24,10 +26,12 @@ type Product = {
 };
 
 const ProductPage = () => {
+  const { addToCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter(); // Hook to navigate between pages
+  const [toast, setToast] = useState({ show: false, message: "" });
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,8 +69,19 @@ const ProductPage = () => {
   }, []);
 
   const handleProductClick = (slug: string) => {
-    // Navigate to the product details page
     router.push(`/product/${slug}`);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+    addToCart({
+      _id: product._id,
+      title: product.title,
+      price: product.price,
+      imageUrl: product.imageUrl,
+      description: product.description,
+    });
+    setToast({ show: true, message: `${product.title} added to cart!` });
   };
 
   return (
@@ -138,6 +153,7 @@ const ProductPage = () => {
                             ? "bg-blue-500 text-white hover:bg-blue-600"
                             : "bg-slate-300 hover:bg-blue-100"
                         }`}
+                        onClick={(e) => handleAddToCart(e, product)}
                       >
                         <GrCart className="text-2xl" />
                       </div>
@@ -149,6 +165,14 @@ const ProductPage = () => {
           )}
         </div>
       </section>
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        isVisible={toast.show}
+        onClose={() => setToast({ ...toast, show: false })}
+        type="success"
+      />
     </div>
   );
 };

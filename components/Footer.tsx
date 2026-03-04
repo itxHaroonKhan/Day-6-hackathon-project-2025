@@ -71,7 +71,7 @@ const Footer = () => {
         <div className="bg-white h-[75px]">
           <div className="container px-5 py-6 mx-auto flex items-center sm:flex-row flex-col">
             <p className="text-sm text-gray-500 text-center sm:text-left sm:ml-6">
-              © 2021 - Comforty - Designed & Developed by <span className="text-black font-semibold">Zakirsoft</span>
+              © 2021 - Comforty - Designed & Developed by <span className="text-black font-semibold">Haroon Rasheed</span>
             </p>
             <span className="sm:ml-auto mt-4 sm:mt-0 flex justify-center">
               <Image src="/Frame 69(1)(1).png" alt="Logo or Image" width={227} height={27} />

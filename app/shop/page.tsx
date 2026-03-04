@@ -1,78 +1,109 @@
 
 "use client"
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
+import { useCart } from "@/context/CartContext";
+import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
 import { FaRegHeart } from "react-icons/fa";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import CheckoutForm from "@/components/CheckoutForm";
-
-interface CartItem {
-  _id: string;
-  title: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-}
+import ConfirmModal from "@/components/ConfirmModal";
 
 const CartPage = () => {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { cart, removeFromCart, clearCart, totalPrice } = useCart();
+  const { user } = useUser();
   const [showCheckout, setShowCheckout] = useState(false);
-
-  useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        setCart(parsedCart);
-      } catch (error) {
-        console.error("Error parsing cart data", error);
-        setCart([]);
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  const removeFromCart = (id: string) => {
-    const updatedCart = cart.filter((item) => item._id !== id);
-    setCart(updatedCart);
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
-  };
-
-  const totalPrice = cart.reduce((acc, item) => acc + Number(item.price), 0).toFixed(2);
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    message: "",
+    type: "info" as "info" | "success" | "error",
+  });
 
   const handleCheckout = () => {
     if (cart.length === 0) {
-      alert("Your cart is empty! Add items before checking out.");
+      setAlertModal({
+        isOpen: true,
+        message: "Your cart is empty! Add items before checking out.",
+        type: "info",
+      });
       return;
     }
     setShowCheckout(true);
   };
 
-  const handleFormSubmit = (formData: { name: string; email: string; address: string; phone: string; zipCode: string; country: string }) => {
-    const orderData = {
-      ...formData,
-      orderItems: cart,
-      totalPrice: parseFloat(totalPrice),
-      status: "pending",
-    };
-    console.log("Order submitted:", orderData);
-    alert("Order Submitted Successfully!");
-    setCart([]);
-    localStorage.removeItem("cart");
-    setShowCheckout(false);
+  const handleFormSubmit = async (formData: { name: string; email: string; address: string; phone: string; zipCode: string; country: string }) => {
+    try {
+      // Use logged-in user's email if available
+      const userEmail = user?.emailAddresses[0]?.emailAddress || formData.email;
+      
+      const orderData = {
+        ...formData,
+        email: userEmail,
+        orderItems: cart,
+        totalPrice: totalPrice.toFixed(2),
+      };
+
+      console.log("📦 Placing order:", orderData);
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const result = await response.json();
+
+      console.log("📋 Order response:", result);
+
+      if (result.success) {
+        const message = result.demo 
+          ? "Order placed successfully! (Demo mode - Sanity not configured)"
+          : "Order placed successfully! You will receive a confirmation email soon.";
+        
+        setAlertModal({
+          isOpen: true,
+          message: message,
+          type: "success",
+        });
+        clearCart();
+        setShowCheckout(false);
+        setTimeout(() => {
+          window.location.href = "/orders";
+        }, 500);
+      } else {
+        setAlertModal({
+          isOpen: true,
+          message: "Failed to place order: " + result.message,
+          type: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      
+      if (error instanceof TypeError) {
+        setAlertModal({
+          isOpen: true,
+          message: "Network error. Please check your internet connection and try again.",
+          type: "error",
+        });
+      } else {
+        setAlertModal({
+          isOpen: true,
+          message: "An error occurred while placing your order. Please try again.",
+          type: "error",
+        });
+      }
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-6 py-12">
-        <h1 className="text-3xl font-extrabold text-gray-800 mb-6">Your Shopping Bag</h1>
-        {loading ? (
-          <div className="text-center py-16">
-            <p className="text-xl text-gray-600">Loading your cart...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
+      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-gray-800 mb-6 text-center md:text-left">Your Shopping Bag</h1>
+        <div className="flex flex-col lg:flex-row gap-6">
             <div className="flex-1 bg-white p-6 rounded-lg shadow-lg">
               {cart.length === 0 ? (
                 <div className="text-center py-16">
@@ -133,8 +164,19 @@ const CartPage = () => {
               )}
             </div>
           </div>
-        )}
       </div>
+
+      {/* Alert Modal */}
+      <ConfirmModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.type === "success" ? "Success" : alertModal.type === "error" ? "Error" : "Information"}
+        message={alertModal.message}
+        onConfirm={() => setAlertModal({ ...alertModal, isOpen: false })}
+        onCancel={() => setAlertModal({ ...alertModal, isOpen: false })}
+        confirmText="OK"
+        cancelText=""
+        type={alertModal.type === "success" ? "info" : alertModal.type === "error" ? "danger" : "warning"}
+      />
     </div>
   );
 };

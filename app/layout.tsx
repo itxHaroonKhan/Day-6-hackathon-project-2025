@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { CartProvider } from "@/context/CartContext";
+import { ClerkProvider } from '@clerk/nextjs'
 
 
 
@@ -30,19 +32,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Header/>
-
-        {children}
-        <Footer/>
-      </body>
-    </html>
-
-
-  
+    <ClerkProvider>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <CartProvider>
+            <Header/>
+            {children}
+            <Footer/>
+          </CartProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
